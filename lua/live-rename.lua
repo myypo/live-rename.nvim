@@ -158,7 +158,7 @@ local function lsp_request_sync(client, method, params, bufnr)
             err = err,
             result = result,
             context = context,
-            config = config
+            config = config,
         }
     end
 
@@ -254,7 +254,7 @@ local function rename_refs_handler(transaction_id, unique_name)
                 bufpos = { C.cword.line, C.cword.start_col },
                 row = 0,
                 -- correct for extmarks on the same line
-                col = -win_offset
+                col = -win_offset,
             }
             vim.api.nvim_win_set_config(C.float_win, win_opts)
         end
@@ -292,6 +292,7 @@ end
 ---@field insert boolean?
 
 ---@param opts RenameOpts?
+---@return boolean
 function M.rename(opts)
     opts = opts or {}
 
@@ -306,7 +307,7 @@ function M.rename(opts)
     local client = clients[1]
     if not client then
         vim.notify("[LSP] rename, no matching server attached")
-        return
+        return false
     end
 
     ---@type lsp.TextDocumentPositionParams
@@ -323,7 +324,7 @@ function M.rename(opts)
             else
                 notify_error("[LSP] rename, invalid position")
             end
-            return
+            return false
         else
             ---@type lsp.PrepareRenameResult
             local result = resp.result
@@ -486,6 +487,8 @@ function M.rename(opts)
         ref_transaction_id = transaction_id,
         rename_params = rename_params,
     }
+
+    return true
 end
 
 function M.update()
@@ -568,7 +571,7 @@ function M.submit()
     local ctx = assert(C)
     C = nil
 
-    local mode = vim.api.nvim_get_mode().mode;
+    local mode = vim.api.nvim_get_mode().mode
     if mode == "i" then
         vim.cmd.stopinsert()
         vim.schedule(function()
